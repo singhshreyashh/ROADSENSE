@@ -1,0 +1,542 @@
+[
+  {
+    "id": "RS-101",
+    "title": "Severe Deep Crater (Outer Lane)",
+    "type": "pothole",
+    "location": {
+      "lat": 12.9719,
+      "lng": 77.5937,
+      "street": "MG Road near Metro Pillar 124",
+      "neighborhood": "Central Business District",
+      "city": "Bengaluru"
+    },
+    "severity": "critical",
+    "confidence": 94,
+    "confidence_level": "high",
+    "status": "scheduled",
+    "created_at": "2026-10-12T08:30:00Z",
+    "updated_at": "2026-10-13T10:15:00Z",
+    "report_count": 5,
+    "is_cluster": true,
+    "telemetry": {
+      "peak_g_force": 3.82,
+      "speed_at_detection": 42.5,
+      "anomaly_duration_ms": 380,
+      "waveform_sample": [0.98, 1.02, 0.95, 2.45, 3.82, -1.2, 1.65, 1.01, 0.99]
+    },
+    "reports": [
+      {
+        "report_id": "REP-201",
+        "trip_id": "TRIP-882",
+        "timestamp": "2026-10-12T08:30:00Z",
+        "source": "simulated_sensor",
+        "device_type": "Phone Mount",
+        "peak_g": 3.82,
+        "user_comment": "Hit this crater at ~40 km/h on my two-wheeler. Front suspension bottomed out completely. Left lane right under pillar 124."
+      },
+      {
+        "report_id": "REP-204",
+        "trip_id": "TRIP-895",
+        "timestamp": "2026-10-12T14:12:00Z",
+        "source": "simulated_sensor",
+        "device_type": "Two-wheeler Pocket",
+        "peak_g": 3.41,
+        "user_comment": "Phone mount shook violently and detached. Road surface has caved in around 4-5 inches."
+      },
+      {
+        "report_id": "REP-209",
+        "trip_id": "TRIP-904",
+        "timestamp": "2026-10-12T18:45:00Z",
+        "source": "manual_driver",
+        "device_type": "Driver Web UI",
+        "peak_g": null,
+        "user_comment": "Deep waterlogged pothole right after rain, invisible until you're right on top of it. Saw a delivery rider slip here."
+      },
+      {
+        "report_id": "REP-215",
+        "trip_id": "TRIP-930",
+        "timestamp": "2026-10-13T07:10:00Z",
+        "source": "simulated_sensor",
+        "device_type": "Car Dashboard",
+        "peak_g": 3.65,
+        "user_comment": "Severe jolt on the car's front-left alloy wheel. Needs urgent cold patching before evening peak traffic."
+      },
+      {
+        "report_id": "REP-220",
+        "trip_id": "TRIP-955",
+        "timestamp": "2026-10-13T09:40:00Z",
+        "source": "simulated_sensor",
+        "device_type": "Phone Mount",
+        "peak_g": 3.9,
+        "user_comment": "Heavy asphalt collapse right in the path of morning commuter traffic. Multiple vehicles swerving sharply to avoid it."
+      }
+    ],
+    "work_order": {
+      "assigned_dept": "Central Public Works Maintenance",
+      "assigned_crew": "Rapid Asphalt Patching Squad 2",
+      "priority": "P1 - Urgent",
+      "notes": "Cold mix asphalt dispatch approved for tonight's quiet window (23:00 - 04:00) to minimize CBD traffic congestion."
+    }
+  },
+  {
+    "id": "RS-102",
+    "title": "Abrupt Braking Hotspot at Blind Curve",
+    "type": "harsh_braking",
+    "location": {
+      "lat": 12.9784,
+      "lng": 77.6408,
+      "street": "100 Feet Rd near 12th Main Junction",
+      "neighborhood": "Indiranagar",
+      "city": "Bengaluru"
+    },
+    "severity": "high",
+    "confidence": 88,
+    "confidence_level": "high",
+    "status": "under_review",
+    "created_at": "2026-10-12T11:15:00Z",
+    "updated_at": "2026-10-13T08:20:00Z",
+    "report_count": 4,
+    "is_cluster": true,
+    "telemetry": {
+      "peak_g_force": 0.82,
+      "speed_at_detection": 51.0,
+      "anomaly_duration_ms": 1200,
+      "waveform_sample": [0.05, -0.12, -0.45, -0.82, -0.76, -0.32, -0.08, 0.0]
+    },
+    "reports": [
+      {
+        "report_id": "REP-202",
+        "trip_id": "TRIP-884",
+        "timestamp": "2026-10-12T11:15:00Z",
+        "source": "simulated_sensor",
+        "device_type": "Phone Mount",
+        "peak_g": 0.78,
+        "user_comment": "Barricades placed right after the 12th Main blind corner without warning reflectors. Everyone is slamming on brakes."
+      },
+      {
+        "report_id": "REP-208",
+        "trip_id": "TRIP-902",
+        "timestamp": "2026-10-12T16:50:00Z",
+        "source": "simulated_sensor",
+        "device_type": "Car Cradle",
+        "peak_g": 0.85,
+        "user_comment": "Braking spike detected (ABS engagement). Visibility blocked by overgrown avenue trees on the divider."
+      },
+      {
+        "report_id": "REP-214",
+        "trip_id": "TRIP-928",
+        "timestamp": "2026-10-13T06:30:00Z",
+        "source": "simulated_sensor",
+        "device_type": "Phone Mount",
+        "peak_g": 0.82,
+        "user_comment": "Sudden vehicle pileup risk. Traffic moves at 50 km/h and immediately hits a standstill."
+      },
+      {
+        "report_id": "REP-218",
+        "trip_id": "TRIP-949",
+        "timestamp": "2026-10-13T08:20:00Z",
+        "source": "manual_driver",
+        "device_type": "Driver Web UI",
+        "peak_g": null,
+        "user_comment": "Construction materials and gravel spilling onto the fast lane without signage. Needs safety cones immediately."
+      }
+    ],
+    "work_order": {
+      "assigned_dept": "Traffic Safety Engineering Cell",
+      "assigned_crew": "Field Signage Team",
+      "priority": "P2 - Elevated",
+      "notes": "Inspector reviewing line of sight obstruction and illegal barricading with Indiranagar traffic division."
+    }
+  },
+  {
+    "id": "RS-103",
+    "title": "Dangerous Swerve Evasion (Exposed Rebar)",
+    "type": "sharp_swerve",
+    "location": {
+      "lat": 12.9352,
+      "lng": 77.6245,
+      "street": "80 Feet Road near Sony World Signal",
+      "neighborhood": "Koramangala 4th Block",
+      "city": "Bengaluru"
+    },
+    "severity": "critical",
+    "confidence": 91,
+    "confidence_level": "high",
+    "status": "in_progress",
+    "created_at": "2026-10-11T19:20:00Z",
+    "updated_at": "2026-10-13T11:00:00Z",
+    "report_count": 6,
+    "is_cluster": true,
+    "telemetry": {
+      "peak_g_force": 0.94,
+      "speed_at_detection": 38.0,
+      "anomaly_duration_ms": 850,
+      "waveform_sample": [0.02, 0.35, 0.94, -0.88, -0.41, 0.15, 0.01]
+    },
+    "reports": [
+      {
+        "report_id": "REP-195",
+        "trip_id": "TRIP-850",
+        "timestamp": "2026-10-11T19:20:00Z",
+        "source": "simulated_sensor",
+        "device_type": "Phone Mount",
+        "peak_g": 0.89,
+        "user_comment": "Rapid lateral yaw excursion. Had to jerk the handlebars left to avoid broken median curb."
+      },
+      {
+        "report_id": "REP-198",
+        "trip_id": "TRIP-865",
+        "timestamp": "2026-10-11T21:40:00Z",
+        "source": "simulated_sensor",
+        "device_type": "Two-wheeler Pocket",
+        "peak_g": 0.94,
+        "user_comment": "Violent evasive maneuver away from center median. High risk of side collision at night."
+      },
+      {
+        "report_id": "REP-205",
+        "trip_id": "TRIP-898",
+        "timestamp": "2026-10-12T15:10:00Z",
+        "source": "manual_driver",
+        "device_type": "Driver Web UI",
+        "peak_g": null,
+        "user_comment": "Broken median concrete with rusty rebar rod sticking out 6 inches into lane. Very dangerous for two-wheelers."
+      },
+      {
+        "report_id": "REP-211",
+        "trip_id": "TRIP-915",
+        "timestamp": "2026-10-12T22:05:00Z",
+        "source": "simulated_sensor",
+        "device_type": "Car Mount",
+        "peak_g": 0.91,
+        "user_comment": "Swerve detected at 41 km/h. Almost collided with bus on left."
+      },
+      {
+        "report_id": "REP-217",
+        "trip_id": "TRIP-940",
+        "timestamp": "2026-10-13T08:00:00Z",
+        "source": "simulated_sensor",
+        "device_type": "Phone Mount",
+        "peak_g": 0.86,
+        "user_comment": "Lateral evasion maneuver logged."
+      },
+      {
+        "report_id": "REP-222",
+        "trip_id": "TRIP-960",
+        "timestamp": "2026-10-13T11:00:00Z",
+        "source": "manual_driver",
+        "device_type": "Driver Web UI",
+        "peak_g": null,
+        "user_comment": "Maintenance crew currently putting safety cones around the median. Rebar being cut."
+      }
+    ],
+    "work_order": {
+      "assigned_dept": "City Median & Structural Maintenance",
+      "assigned_crew": "Concrete Repair Unit 1",
+      "priority": "P1 - Critical",
+      "notes": "Crew on site cutting exposed rebar and setting quick-dry structural grout. Lane partially barricaded."
+    }
+  },
+  {
+    "id": "RS-104",
+    "title": "Sunken Trench Across Service Road",
+    "type": "pothole",
+    "location": {
+      "lat": 12.9298,
+      "lng": 77.6835,
+      "street": "Outer Ring Road near Bellandur Eco-Space",
+      "neighborhood": "Bellandur",
+      "city": "Bengaluru"
+    },
+    "severity": "high",
+    "confidence": 85,
+    "confidence_level": "high",
+    "status": "reported",
+    "created_at": "2026-10-13T06:45:00Z",
+    "updated_at": "2026-10-13T09:30:00Z",
+    "report_count": 3,
+    "is_cluster": true,
+    "telemetry": {
+      "peak_g_force": 2.95,
+      "speed_at_detection": 35.0,
+      "anomaly_duration_ms": 420,
+      "waveform_sample": [1.0, 1.1, 2.1, 2.95, -0.85, 1.4, 0.98]
+    },
+    "reports": [
+      {
+        "report_id": "REP-213",
+        "trip_id": "TRIP-922",
+        "timestamp": "2026-10-13T06:45:00Z",
+        "source": "simulated_sensor",
+        "device_type": "Phone Mount",
+        "peak_g": 2.95,
+        "user_comment": "Utility cable trench improperly backfilled. Settlement of 3 inches across entire width of service road."
+      },
+      {
+        "report_id": "REP-216",
+        "trip_id": "TRIP-935",
+        "timestamp": "2026-10-13T07:45:00Z",
+        "source": "simulated_sensor",
+        "device_type": "Car Mount",
+        "peak_g": 2.7,
+        "user_comment": "Repeated heavy suspension thud. Every vehicle is forced to brake from 40 km/h to 5 km/h."
+      },
+      {
+        "report_id": "REP-221",
+        "trip_id": "TRIP-958",
+        "timestamp": "2026-10-13T09:30:00Z",
+        "source": "manual_driver",
+        "device_type": "Driver Web UI",
+        "peak_g": null,
+        "user_comment": "Unpaved strip across both lanes causing 1 km traffic tailback during tech park rush hour."
+      }
+    ],
+    "work_order": {
+      "assigned_dept": "Unassigned",
+      "assigned_crew": "Pending Review",
+      "priority": "P2 - High",
+      "notes": "Awaiting assignment from South Zone Public Works supervisor. Utility agency coordination required."
+    }
+  },
+  {
+    "id": "RS-105",
+    "title": "Recurrent Harsh Deceleration at Flyover Descent",
+    "type": "harsh_braking",
+    "location": {
+      "lat": 12.9172,
+      "lng": 77.6228,
+      "street": "Hosur Road near Silk Board Junction",
+      "neighborhood": "Madiwala / BTM",
+      "city": "Bengaluru"
+    },
+    "severity": "medium",
+    "confidence": 74,
+    "confidence_level": "medium",
+    "status": "under_review",
+    "created_at": "2026-10-12T17:30:00Z",
+    "updated_at": "2026-10-13T08:15:00Z",
+    "report_count": 2,
+    "is_cluster": true,
+    "telemetry": {
+      "peak_g_force": 0.68,
+      "speed_at_detection": 48.0,
+      "anomaly_duration_ms": 1100,
+      "waveform_sample": [0.0, -0.22, -0.55, -0.68, -0.42, -0.1]
+    },
+    "reports": [
+      {
+        "report_id": "REP-210",
+        "trip_id": "TRIP-911",
+        "timestamp": "2026-10-12T17:30:00Z",
+        "source": "simulated_sensor",
+        "device_type": "Phone Mount",
+        "peak_g": 0.68,
+        "user_comment": "Abrupt queue buildup immediately after flyover ramp curve. Drivers coming off flyover cannot see the tail."
+      },
+      {
+        "report_id": "REP-219",
+        "trip_id": "TRIP-950",
+        "timestamp": "2026-10-13T08:15:00Z",
+        "source": "simulated_sensor",
+        "device_type": "Car Mount",
+        "peak_g": 0.65,
+        "user_comment": "Braking threshold exceeded. Need advance speed reduction sign on the elevated section."
+      }
+    ],
+    "work_order": {
+      "assigned_dept": "Traffic Signal & Flow Optimization",
+      "assigned_crew": "South Division Traffic Ops",
+      "priority": "P3 - Moderate",
+      "notes": "Evaluating green cycle timing on Silk Board slip ramp and positioning of rumble strips on descent."
+    }
+  },
+  {
+    "id": "RS-106",
+    "title": "Loose Paver Blocks & Uneven Manhole",
+    "type": "pothole",
+    "location": {
+      "lat": 12.9611,
+      "lng": 77.6387,
+      "street": "Old Airport Road near Domlur Flyover",
+      "neighborhood": "Domlur",
+      "city": "Bengaluru"
+    },
+    "severity": "medium",
+    "confidence": 68,
+    "confidence_level": "medium",
+    "status": "reported",
+    "created_at": "2026-10-13T05:20:00Z",
+    "updated_at": "2026-10-13T07:50:00Z",
+    "report_count": 2,
+    "is_cluster": true,
+    "telemetry": {
+      "peak_g_force": 2.15,
+      "speed_at_detection": 40.0,
+      "anomaly_duration_ms": 310,
+      "waveform_sample": [1.0, 1.4, 2.15, -0.4, 1.2, 1.0]
+    },
+    "reports": [
+      {
+        "report_id": "REP-212",
+        "trip_id": "TRIP-919",
+        "timestamp": "2026-10-13T05:20:00Z",
+        "source": "simulated_sensor",
+        "device_type": "Two-wheeler Pocket",
+        "peak_g": 2.15,
+        "user_comment": "Uneven chamber lid protruding 3 inches above asphalt. Causes severe kickback on scooter steering."
+      },
+      {
+        "report_id": "REP-223",
+        "trip_id": "TRIP-962",
+        "timestamp": "2026-10-13T07:50:00Z",
+        "source": "simulated_sensor",
+        "device_type": "Phone Mount",
+        "peak_g": 1.98,
+        "user_comment": "Rattling road joint with loose interlocking paver blocks scattered around."
+      }
+    ],
+    "work_order": {
+      "assigned_dept": "Water Supply & Sewerage Coordination",
+      "assigned_crew": "Pending Inspection",
+      "priority": "P3 - Moderate",
+      "notes": "Requires chamber lid leveling flush with tarmac. Notice sent to utility coordination cell."
+    }
+  },
+  {
+    "id": "RS-107",
+    "title": "Isolated Minor Surface Raveling",
+    "type": "pothole",
+    "location": {
+      "lat": 12.9856,
+      "lng": 77.6052,
+      "street": "Cunningham Road near Chandrika Hotel",
+      "neighborhood": "Vasanth Nagar",
+      "city": "Bengaluru"
+    },
+    "severity": "low",
+    "confidence": 42,
+    "confidence_level": "low",
+    "status": "reported",
+    "created_at": "2026-10-13T10:05:00Z",
+    "updated_at": "2026-10-13T10:05:00Z",
+    "report_count": 1,
+    "is_cluster": false,
+    "telemetry": {
+      "peak_g_force": 1.65,
+      "speed_at_detection": 28.0,
+      "anomaly_duration_ms": 250,
+      "waveform_sample": [1.0, 1.25, 1.65, 0.8, 1.0]
+    },
+    "reports": [
+      {
+        "report_id": "REP-224",
+        "trip_id": "TRIP-965",
+        "timestamp": "2026-10-13T10:05:00Z",
+        "source": "simulated_sensor",
+        "device_type": "Phone Mount",
+        "peak_g": 1.65,
+        "user_comment": "Minor aggregate detachment on road shoulder. Passable with minor vibration."
+      }
+    ],
+    "work_order": {
+      "assigned_dept": "Unassigned",
+      "assigned_crew": "Unassigned",
+      "priority": "P4 - Low",
+      "notes": "Single report. Monitoring for additional corroborating trips before dispatch."
+    }
+  },
+  {
+    "id": "RS-108",
+    "title": "Sudden Swerve Around Fallen Tree Branch",
+    "type": "sharp_swerve",
+    "location": {
+      "lat": 12.9912,
+      "lng": 77.5884,
+      "street": "Sankey Road near Golf Course Entrance",
+      "neighborhood": "High Grounds",
+      "city": "Bengaluru"
+    },
+    "severity": "medium",
+    "confidence": 46,
+    "confidence_level": "low",
+    "status": "reported",
+    "created_at": "2026-10-13T11:30:00Z",
+    "updated_at": "2026-10-13T11:30:00Z",
+    "report_count": 1,
+    "is_cluster": false,
+    "telemetry": {
+      "peak_g_force": 0.62,
+      "speed_at_detection": 44.0,
+      "anomaly_duration_ms": 720,
+      "waveform_sample": [0.0, 0.28, 0.62, -0.45, 0.1, 0.0]
+    },
+    "reports": [
+      {
+        "report_id": "REP-225",
+        "trip_id": "TRIP-970",
+        "timestamp": "2026-10-13T11:30:00Z",
+        "source": "manual_driver",
+        "device_type": "Driver Web UI",
+        "peak_g": null,
+        "user_comment": "Tree branch hanging into right lane after overnight rain. Blocks high-roof vehicles."
+      }
+    ],
+    "work_order": {
+      "assigned_dept": "Forestry & Horticulture Wing",
+      "assigned_crew": "North Rapid Clearance",
+      "priority": "P3 - Moderate",
+      "notes": "Single manual report logged by commuter. Clearance ticket created for horticulture team."
+    }
+  },
+  {
+    "id": "RS-109",
+    "title": "Repaired Multi-Layer Surface Patch",
+    "type": "pothole",
+    "location": {
+      "lat": 12.9565,
+      "lng": 77.6012,
+      "street": "Richmond Road near Flyover Pillar 12",
+      "neighborhood": "Richmond Town",
+      "city": "Bengaluru"
+    },
+    "severity": "low",
+    "confidence": 92,
+    "confidence_level": "high",
+    "status": "resolved",
+    "created_at": "2026-10-09T14:00:00Z",
+    "updated_at": "2026-10-12T16:00:00Z",
+    "report_count": 4,
+    "is_cluster": true,
+    "telemetry": {
+      "peak_g_force": 2.8,
+      "speed_at_detection": 35.0,
+      "anomaly_duration_ms": 340,
+      "waveform_sample": [1.0, 1.8, 2.8, -0.6, 1.1, 1.0]
+    },
+    "reports": [
+      {
+        "report_id": "REP-180",
+        "trip_id": "TRIP-801",
+        "timestamp": "2026-10-09T14:00:00Z",
+        "source": "simulated_sensor",
+        "device_type": "Phone Mount",
+        "peak_g": 2.8,
+        "user_comment": "Large depression near bridge expansion joint causing severe vehicle rattling."
+      },
+      {
+        "report_id": "REP-183",
+        "trip_id": "TRIP-815",
+        "timestamp": "2026-10-10T09:15:00Z",
+        "source": "manual_driver",
+        "device_type": "Driver Web UI",
+        "peak_g": null,
+        "user_comment": "Repeated hazard reported by morning commuters."
+      }
+    ],
+    "work_order": {
+      "assigned_dept": "Central Roads Infrastructure",
+      "assigned_crew": "Patching Squad 1",
+      "priority": "Resolved",
+      "notes": "Mastic asphalt resurfacing completed on Oct 12. Road reopened and sensor anomalies ceased."
+    }
+  }
+]
