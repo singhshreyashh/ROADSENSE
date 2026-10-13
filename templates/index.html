@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RoadSense — Crowdsourced Civic Road-Condition Mapping</title>
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+
+  <!-- RoadSense Civic Design System -->
+  <link rel="stylesheet" href="/static/css/style.css" />
+</head>
+<body>
+
+  <!-- ==================== HEADER ==================== -->
+  <header class="app-header">
+    <div class="brand-section">
+      <div class="brand-logo-icon">🛣️</div>
+      <div>
+        <div class="brand-title">
+          RoadSense
+          <span class="brand-badge">Civic Prototype</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Center View Switcher -->
+    <div class="header-center-tabs">
+      <button class="nav-tab-btn" data-view="driver" id="tabDriverBtn">
+        <span>🚗</span>
+        <span>Driver Sensing Portal</span>
+      </button>
+      <button class="nav-tab-btn active" data-view="gov" id="tabGovBtn">
+        <span>🏛️</span>
+        <span>Public Works Dashboard</span>
+      </button>
+    </div>
+
+    <!-- Right Header Actions -->
+    <div class="header-actions">
+      <button class="btn btn-secondary btn-sm" id="openDemoTourBtn" title="Hackathon Presentation Tour">
+        <span>🎯</span>
+        <span>Demo Guide</span>
+      </button>
+      <button class="btn btn-danger btn-sm" id="resetDataBtn" title="Reset sample data">
+        <span>🔄</span>
+        <span>Reset Data</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ==================== SUB-HEADER BANNER ==================== -->
+  <div class="demo-banner">
+    <div>
+      <strong>Hackathon Prototype Notice:</strong> Demonstrating crowdsourced smartphone motion anomaly detection & municipal repair triage. Telemetry is simulated.
+    </div>
+    <div class="demo-banner-links">
+      <span class="demo-link" onclick="document.getElementById('openDemoTourBtn').click()">View 4-Step Hackathon Presentation Walkthrough →</span>
+    </div>
+  </div>
+
+  <!-- ==================== TOP CIVIC KPIS ==================== -->
+  <section class="kpi-bar">
+    <div class="kpi-card">
+      <div class="kpi-icon blue">📍</div>
+      <div class="kpi-info">
+        <span class="kpi-value" id="kpiTotal">0</span>
+        <span class="kpi-label">Total Road Defects</span>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon red">⚠️</div>
+      <div class="kpi-info">
+        <span class="kpi-value" id="kpiCritical">0</span>
+        <span class="kpi-label">Critical / High Severity</span>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon purple">⚡</div>
+      <div class="kpi-info">
+        <span class="kpi-value" id="kpiClusters">0</span>
+        <span class="kpi-label">Multi-Trip Corroborated</span>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon amber">🛠️</div>
+      <div class="kpi-info">
+        <span class="kpi-value" id="kpiInRepair">0</span>
+        <span class="kpi-label">Scheduled / In Repair</span>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon green">✅</div>
+      <div class="kpi-info">
+        <span class="kpi-value" id="kpiResolved">0</span>
+        <span class="kpi-label">Repaired & Resolved</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== MAIN CONTENT CONTAINER ==================== -->
+  <main class="app-container">
+
+    <!-- ==================== VIEW 1: DRIVER EXPERIENCE ==================== -->
+    <div class="view-panel" id="viewDriver">
+      <div class="driver-layout">
+        
+        <!-- Left: Telemetry & Sensing Controls -->
+        <div class="driver-card">
+          <div class="card-header">
+            <span class="card-title">
+              <span>📱</span> Smartphone Drive Sensing HUD
+            </span>
+            <div class="sensing-controls">
+              <button class="btn btn-secondary btn-sm" id="toggleSensingBtn">Pause Sensing</button>
+              <button class="btn btn-primary btn-sm" id="triggerBumpBtn">⚡ Inject Pothole Bump</button>
+            </div>
+          </div>
+
+          <!-- Active indicator -->
+          <div class="sensing-hud-status">
+            <div class="pulse-indicator">
+              <span class="pulse-dot" id="sensingPulseDot"></span>
+              <span id="sensingStatusText" style="color: #fff;">ACTIVE — STREAMING 10Hz SIMULATED TELEMETRY</span>
+            </div>
+          </div>
+
+          <!-- Gauges -->
+          <div class="hud-gauges">
+            <div class="gauge-box">
+              <div class="gauge-val" id="hudGz">1.02 G</div>
+              <div class="gauge-label">Vertical Shock (Z)</div>
+            </div>
+            <div class="gauge-box">
+              <div class="gauge-val" id="hudGx">0.02 G</div>
+              <div class="gauge-label">Braking Decel (X)</div>
+            </div>
+            <div class="gauge-box">
+              <div class="gauge-val" id="hudSpeed">42 km/h</div>
+              <div class="gauge-label">Vehicle Speed</div>
+            </div>
+          </div>
+
+          <!-- Waveform Canvas -->
+          <div class="waveform-canvas-container">
+            <div class="canvas-title">
+              <span>REAL-TIME VERTICAL ACCELEROMETER STREAM</span>
+              <span id="hudGps">GPS: ±3.2m</span>
+            </div>
+            <canvas id="accelerometerWaveCanvas" width="500" height="80"></canvas>
+          </div>
+
+          <!-- Manual CTA -->
+          <div style="display: flex; gap: 0.75rem; align-items: center; justify-content: space-between; background: var(--bg-subtle); padding: 0.85rem; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+            <div>
+              <div style="font-weight: 700; color: #fff; font-size: 0.95rem;">Spot a hazard on your route?</div>
+              <div style="font-size: 0.78rem; color: var(--text-muted);">Contribute a manual citizen report to boost community confidence.</div>
+            </div>
+            <button class="btn btn-primary" id="openReportModalBtn">
+              <span>+</span>
+              <span>Report Road Hazard</span>
+            </button>
+          </div>
+
+          <!-- Privacy Notice -->
+          <div class="privacy-notice-box">
+            <div style="font-size: 1.5rem;">🔒</div>
+            <div>
+              <strong>Privacy & Data Notice:</strong>
+              <div>RoadSense processes passive motion variance and approximate road coordinates during driving trips. No audio, camera, or persistent individual vehicle trip history is retained or shared with municipal agencies.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Recent Hazards & Map Context -->
+        <div class="driver-card">
+          <div class="card-header">
+            <span class="card-title">
+              <span>⚠️</span> Community Road Hazards Near You
+            </span>
+            <button class="btn btn-secondary btn-sm" onclick="window.App.switchView('gov')">
+              <span>View Full City Map →</span>
+            </button>
+          </div>
+
+          <div style="font-size: 0.82rem; color: var(--text-muted);">
+            Corroborated road hazards along your active corridor in Bengaluru CBD:
+          </div>
+
+          <div class="recent-issues-list" id="driverRecentIssues">
+            <!-- Populated dynamically -->
+          </div>
+
+          <div style="margin-top: auto; padding-top: 1rem; border-top: 1px solid var(--border-color); font-size: 0.78rem; color: var(--text-dim); text-align: center;">
+            Reports from multiple independent trips automatically merge into spatial clusters.
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ==================== VIEW 2: GOVERNMENT DASHBOARD ==================== -->
+    <div class="view-panel active" id="viewGov">
+      <div class="gov-layout">
+        
+        <!-- Filter & Search Toolbar -->
+        <div class="gov-toolbar">
+          <div class="filter-group">
+            <input type="text" class="text-input" id="searchInput" placeholder="🔍 Search street, landmark, or ID..." style="min-width: 220px;" />
+
+            <label class="filter-label" for="filterType">Type:</label>
+            <select class="select-input" id="filterType">
+              <option value="all">All Types</option>
+              <option value="pothole">Potholes</option>
+              <option value="harsh_braking">Harsh Braking</option>
+              <option value="sharp_swerve">Sharp Swerves</option>
+            </select>
+
+            <label class="filter-label" for="filterSeverity">Severity:</label>
+            <select class="select-input" id="filterSeverity">
+              <option value="all">All Severities</option>
+              <option value="critical">Critical</option>
+              <option value="high">High</option>
+              <option value="medium">Medium</option>
+              <option value="low">Low</option>
+            </select>
+
+            <label class="filter-label" for="filterConfidence">Confidence:</label>
+            <select class="select-input" id="filterConfidence">
+              <option value="all">All Confidence</option>
+              <option value="high">High (≥80%)</option>
+              <option value="medium">Medium (50-79%)</option>
+              <option value="low">Low (&lt;50%)</option>
+            </select>
+
+            <label class="filter-label" for="filterStatus">Status:</label>
+            <select class="select-input" id="filterStatus">
+              <option value="all">All Statuses</option>
+              <option value="reported">Reported</option>
+              <option value="under_review">Under Review</option>
+              <option value="scheduled">Scheduled</option>
+              <option value="in_progress">In Progress</option>
+              <option value="resolved">Resolved</option>
+            </select>
+          </div>
+
+          <!-- Right Tile Switcher -->
+          <div class="filter-group">
+            <label class="filter-label" for="tileProviderSelect">Basemap:</label>
+            <select class="select-input" id="tileProviderSelect">
+              <option value="openstreetmap">OpenStreetMap Standard</option>
+              <option value="carto_positron">CartoDB Positron (Light)</option>
+              <option value="carto_dark">CartoDB Dark Matter</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Split Map + List Layout -->
+        <div class="gov-content-split">
+          
+          <!-- Left: Prominent Interactive Leaflet Map -->
+          <div class="map-container-wrap">
+            <div id="map"></div>
+            
+            <!-- Map Offline Alert Banner -->
+            <div class="map-offline-banner" id="mapOfflineBanner">
+              ⚠️ Map tiles failed to load. The triage list, filters, and telemetry evidence remain 100% operational.
+            </div>
+          </div>
+
+          <!-- Right: Synchronized Issue Queue -->
+          <div class="issues-queue-wrap">
+            <div class="queue-header">
+              <span class="queue-title">Road Defect Triage Queue</span>
+              <span style="font-size: 0.75rem; color: var(--text-muted);">Click card to focus map</span>
+            </div>
+            <div class="queue-list" id="queueListContainer">
+              <!-- Rendered dynamically -->
+            </div>
+          </div>
+
+          <!-- Defect Detail & Action Drawer (Slide-Over) -->
+          <div class="detail-drawer" id="detailDrawer">
+            <div class="drawer-header">
+              <div>
+                <span style="font-size: 0.75rem; color: var(--brand-glow); font-weight: 700;" id="drawerIssueId">#RS-101</span>
+                <div style="font-size: 1.1rem; font-weight: 700; color: #fff;" id="drawerTitle">Defect Detail</div>
+              </div>
+              <button class="modal-close-btn" id="closeDrawerBtn">&times;</button>
+            </div>
+
+            <div class="drawer-body">
+              
+              <!-- Location & Badges -->
+              <div>
+                <div style="font-size: 0.85rem; color: #cbd5e1; font-weight: 600;" id="drawerLocation">MG Road</div>
+                <div style="font-size: 0.75rem; color: var(--text-dim);" id="drawerCoords">Lat: 12.9719, Lng: 77.5937</div>
+                <div style="display: flex; gap: 0.4rem; margin-top: 0.5rem; flex-wrap: wrap;" id="drawerBadges">
+                  <!-- Badges injected -->
+                </div>
+              </div>
+
+              <!-- Municipal Pipeline Stepper -->
+              <div>
+                <div style="font-size: 0.78rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;">Repair Lifecycle Pipeline</div>
+                <div class="stepper-container">
+                  <div class="step-node" id="step-reported">
+                    <div class="step-circle">1</div>
+                    <div class="step-label">Reported</div>
+                  </div>
+                  <div class="step-node" id="step-under_review">
+                    <div class="step-circle">2</div>
+                    <div class="step-label">Review</div>
+                  </div>
+                  <div class="step-node" id="step-scheduled">
+                    <div class="step-circle">3</div>
+                    <div class="step-label">Scheduled</div>
+                  </div>
+                  <div class="step-node" id="step-in_progress">
+                    <div class="step-circle">4</div>
+                    <div class="step-label">In Progress</div>
+                  </div>
+                  <div class="step-node" id="step-resolved">
+                    <div class="step-circle">5</div>
+                    <div class="step-label">Resolved</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Status Action Buttons -->
+              <div id="drawerActionBtns">
+                <!-- Action buttons -->
+              </div>
+
+              <!-- Sensor Evidence Inspector -->
+              <div style="background: var(--bg-subtle); padding: 0.85rem; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                  <span style="font-size: 0.78rem; font-weight: 700; color: #fff;">SENSOR EVIDENCE: ACCELEROMETER IMPULSE TRACE</span>
+                  <span style="font-size: 0.72rem; color: var(--brand-glow);">Z-Axis Shockwave</span>
+                </div>
+                <canvas id="detailWaveformCanvas" class="waveform-static-canvas" width="440" height="100"></canvas>
+                <div style="display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--text-dim); margin-top: 0.25rem;">
+                  <span>Baseline (1.0G)</span>
+                  <span>Impact Peak</span>
+                  <span>Post-Impact Dampening</span>
+                </div>
+              </div>
+
+              <!-- Corroboration Timeline -->
+              <div>
+                <div style="font-size: 0.78rem; font-weight: 700; color: #fff; margin-bottom: 0.5rem;">CORROBORATING VEHICLE TRIPS TIMELINE</div>
+                <div class="reports-timeline" id="drawerReportsTimeline">
+                  <!-- Timeline items -->
+                </div>
+              </div>
+
+              <!-- Work Order Assignment Form -->
+              <div style="background: var(--bg-subtle); padding: 0.85rem; border-radius: var(--radius-md); border: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 0.65rem;">
+                <div style="font-size: 0.78rem; font-weight: 700; color: #fff;">PUBLIC WORKS WORK ORDER ASSIGNMENT</div>
+                <div class="form-group">
+                  <label class="form-label">Department</label>
+                  <input type="text" class="text-input" id="woDept" value="Central Public Works Maintenance" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Repair Squad / Contractor</label>
+                  <input type="text" class="text-input" id="woCrew" value="Rapid Asphalt Patching Squad 2" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Dispatch Priority</label>
+                  <select class="select-input" id="woPriority">
+                    <option value="P1 - Urgent">P1 - Urgent (Immediate Safety Hazard)</option>
+                    <option value="P2 - Elevated">P2 - Elevated (Schedule within 48h)</option>
+                    <option value="P3 - Moderate">P3 - Moderate (Routine Patch Cycle)</option>
+                    <option value="P4 - Low">P4 - Low / Monitoring</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Inspector Notes & Resolution Log</label>
+                  <textarea class="text-input" id="woNotes" rows="2" placeholder="Enter inspection notes or dispatch instructions..."></textarea>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ==================== MODAL 1: MANUAL REPORT SUBMISSION ==================== -->
+  <div class="modal-overlay" id="reportModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <span class="modal-title">Submit Road Hazard Report</span>
+        <button class="modal-close-btn" id="closeReportModalBtn">&times;</button>
+      </div>
+
+      <form id="manualReportForm">
+        <div class="modal-body">
+          <input type="hidden" id="manualReportType" value="pothole" />
+          <input type="hidden" id="manualReportSeverity" value="high" />
+
+          <!-- Hazard Type Grid -->
+          <div class="form-group">
+            <label class="form-label">Hazard Category</label>
+            <div class="type-selector-grid">
+              <div class="type-select-card active" data-type="pothole">
+                <div class="icon">🕳️</div>
+                <div class="name">Pothole / Crater</div>
+              </div>
+              <div class="type-select-card" data-type="harsh_braking">
+                <div class="icon">🛑</div>
+                <div class="name">Harsh Braking</div>
+              </div>
+              <div class="type-select-card" data-type="sharp_swerve">
+                <div class="icon">🔀</div>
+                <div class="name">Sharp Swerve</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Severity Selector -->
+          <div class="form-group">
+            <label class="form-label">Estimated Severity</label>
+            <div class="severity-pill-group">
+              <div class="sev-pill" data-sev="low">Low</div>
+              <div class="sev-pill" data-sev="medium">Medium</div>
+              <div class="sev-pill active" data-sev="high">High</div>
+              <div class="sev-pill" data-sev="critical">Critical</div>
+            </div>
+          </div>
+
+          <!-- Street / Location -->
+          <div class="form-group">
+            <label class="form-label">Street / Corridor Name</label>
+            <input type="text" class="text-input" id="manualReportStreet" value="MG Road near Metro Pillar 124" required />
+            <span style="font-size: 0.72rem; color: var(--text-dim);">Coordinates defaulted to current drive position to demonstrate spatial clustering.</span>
+          </div>
+
+          <!-- Notes -->
+          <div class="form-group">
+            <label class="form-label">Observations / Notes (Optional)</label>
+            <textarea class="text-input" id="manualReportNotes" rows="2" placeholder="e.g. Deep crater on left lane, exposed aggregate, sharp edge..."></textarea>
+          </div>
+
+          <!-- Disclaimer -->
+          <div style="font-size: 0.75rem; color: var(--text-dim); background: var(--bg-subtle); padding: 0.65rem; border-radius: var(--radius-sm); border: 1px solid var(--border-color);">
+            ℹ️ <strong>Prototype Simulation Note:</strong> In production, phone sensors automatically corroborate this report with passive accelerometer traces.
+          </div>
+
+          <!-- Submit -->
+          <button type="submit" class="btn btn-primary" style="padding: 0.75rem;">
+            <span>Log Hazard to City Map</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL 2: PRESENTATION DEMO TOUR GUIDE ==================== -->
+  <div class="modal-overlay" id="demoTourModal">
+    <div class="modal-card" style="max-width: 680px;">
+      <div class="modal-header">
+        <span class="modal-title">🎯 RoadSense Hackathon Presentation Guide</span>
+        <button class="modal-close-btn" id="closeDemoTourBtn">&times;</button>
+      </div>
+      <div class="modal-body" style="gap: 1rem; font-size: 0.88rem;">
+        <p style="color: var(--text-muted);">
+          Follow this 4-step walkthrough for an impactful, high-score hackathon presentation:
+        </p>
+
+        <div style="background: var(--bg-subtle); border-left: 3px solid #38bdf8; padding: 0.75rem; border-radius: 4px;">
+          <strong style="color: #38bdf8;">Step 1: Commuter Experience (Driver Portal)</strong>
+          <p style="margin-top: 0.25rem; color: var(--text-main);">
+            Switch to the <strong>Driver Sensing Portal</strong>. Point out the live simulated accelerometer HUD streaming at 10Hz and the privacy notice. Click <code>⚡ Inject Pothole Bump</code> to simulate driving over a hazard. Note the instant shockwave on the canvas and notification!
+          </p>
+        </div>
+
+        <div style="background: var(--bg-subtle); border-left: 3px solid #f59e0b; padding: 0.75rem; border-radius: 4px;">
+          <strong style="color: #f59e0b;">Step 2: Crowdsource Corroboration & Confidence Boosting</strong>
+          <p style="margin-top: 0.25rem; color: var(--text-main);">
+            Click <code>+ Report Road Hazard</code> to submit a manual citizen report on <em>MG Road</em>. The clustering algorithm identifies the spatial proximity, merges the report into the cluster, and boosts confidence from <strong>40% to 94%</strong>! Explain how multiple trips turn sensor noise into verified truth.
+          </p>
+        </div>
+
+        <div style="background: var(--bg-subtle); border-left: 3px solid #ef4444; padding: 0.75rem; border-radius: 4px;">
+          <strong style="color: #ef4444;">Step 3: Municipal Operations & Interactive Leaflet Map</strong>
+          <p style="margin-top: 0.25rem; color: var(--text-main);">
+            Switch to the <strong>Public Works Dashboard</strong>. Show the interactive Leaflet map with custom icons (craters for potholes, stop signs for harsh braking, curves for swerves) and cluster badges (e.g. <code>5x</code>). Filter by <em>Critical</em> severity or switch the basemap tile provider.
+          </p>
+        </div>
+
+        <div style="background: var(--bg-subtle); border-left: 3px solid #10b981; padding: 0.75rem; border-radius: 4px;">
+          <strong style="color: #10b981;">Step 4: Evidence Inspection & Repair Lifecycle</strong>
+          <p style="margin-top: 0.25rem; color: var(--text-main);">
+            Click <code>Inspect</code> on <em>#RS-101</em>. Open the drawer to reveal the <strong>sensor waveform impulse chart</strong> and multi-trip timeline. Click through the 5-stage repair pipeline: <em>Reported → Scheduled → Resolved</em> to close the loop!
+          </p>
+        </div>
+
+        <div style="text-align: right; margin-top: 0.5rem;">
+          <button class="btn btn-primary" onclick="document.getElementById('demoTourModal').classList.remove('open')">Got it, Let's Demo!</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+  <!-- RoadSense Client Scripts -->
+  <script src="/static/js/api.js"></script>
+  <script src="/static/js/map.js"></script>
+  <script src="/static/js/sensor_sim.js"></script>
+  <script src="/static/js/app.js"></script>
+</body>
+</html>
