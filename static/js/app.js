@@ -1,6 +1,6 @@
 /**
  * RoadSense Master Application Controller
- * Orchestrates views, filters, Leaflet map, simulated sensing, and municipal triage workflow.
+ * Orchestrates views, filters, Leaflet map, mobile sensor engine, and municipal triage workflow.
  */
 
 class RoadSenseApp {
@@ -9,7 +9,7 @@ class RoadSenseApp {
     this.issues = [];
     this.selectedIssue = null;
     this.mapController = null;
-    this.sensorSimulator = null;
+    this.sensorSimulator = null; // MobileSensorEngine instance
     this.filters = {
       type: "all",
       severity: "all",
@@ -17,25 +17,30 @@ class RoadSenseApp {
       status: "all",
       search: ""
     };
+    this.liveSyncInterval = null;
+    this.lastKnownIssueCount = 0;
   }
 
   async init() {
-    // Initialize Leaflet Map
+    // 1. Initialize Leaflet Map
     this.mapController = new RoadSenseMap("map", {
       onMarkerSelect: (issue) => this.selectIssue(issue, false)
     });
     await this.mapController.init();
 
-    // Initialize Sensor Simulator on HUD canvas
-    this.sensorSimulator = new SensorSimulator("accelerometerWaveCanvas", {
-      onAnomalyDetected: (event) => this.handleSimulatedDetection(event)
+    // 2. Initialize Mobile Hardware Sensor Engine
+    this.sensorSimulator = new MobileSensorEngine("accelerometerWaveCanvas", {
+      onAnomalyDetected: (payload, apiResponse) => this.handleLiveBumpDetected(payload, apiResponse)
     });
 
-    // Attach DOM Event Listeners
+    // 3. Attach DOM Event Listeners
     this.bindEvents();
 
-    // Load Initial Data
+    // 4. Load Initial Data
     await this.refreshAll();
+
+    // 5. Start Real-Time Live Sync Polling (every 3 seconds)
+    this.startLiveSync();
   }
 
   bindEvents() {
@@ -88,22 +93,22 @@ class RoadSenseApp {
       });
     }
 
-    // Driver Sensing Buttons
+    // Driver Mobile Sensing Controls (Explicit User Gesture Handler)
     const toggleSensingBtn = document.getElementById("toggleSensingBtn");
     const triggerBumpBtn = document.getElementById("triggerBumpBtn");
 
     if (toggleSensingBtn) {
-      toggleSensingBtn.addEventListener("click", () => {
-        const active = this.sensorSimulator.toggleSimulation();
-        toggleSensingBtn.innerText = active ? "Pause Sensing" : "Resume Sensing";
-        toggleSensingBtn.className = active ? "btn btn-secondary btn-sm" : "btn btn-primary btn-sm";
+      toggleSensingBtn.addEventListener("click", async () => {
+        const isNowTracking = await this.sensorSimulator.toggleTracking();
+        this.updateTrackingButtonUi(isNowTracking);
       });
     }
 
+    // Manual Simulate Trigger Button (Presentation Backup)
     if (triggerBumpBtn) {
       triggerBumpBtn.addEventListener("click", () => {
-        this.sensorSimulator.triggerSimulatedAnomaly("pothole");
-        this.showToast("⚡ Simulated Pothole Anomaly Detected (Z-axis 3.85G shockwave)!");
+        this.sensorSimulator.triggerManualSimulatedBump();
+        this.showToast("⚡ Manual Bump Simulated! 3.85G shockwave dispatched to /api/report.");
       });
     }
 
@@ -188,6 +193,18 @@ class RoadSenseApp {
     }
   }
 
+  updateTrackingButtonUi(isTracking) {
+    const btn = document.getElementById("toggleSensingBtn");
+    if (!btn) return;
+    if (isTracking) {
+      btn.innerHTML = `<span>⏸</span> <span>Stop Tracking</span>`;
+      btn.className = "btn btn-danger btn-sm";
+    } else {
+      btn.innerHTML = `<span>▶</span> <span>Start Tracking</span>`;
+      btn.className = "btn btn-primary btn-sm";
+    }
+  }
+
   switchView(viewName) {
     this.currentView = viewName;
 
@@ -203,6 +220,42 @@ class RoadSenseApp {
     }
   }
 
+  /**
+   * Starts periodic polling (every 3 seconds) for live real-time dashboard sync.
+   * If a mobile phone detects a bump anywhere on the road, the government dashboard
+   * updates the Leaflet map and triage queue in real time without a page reload.
+   */
+  startLiveSync() {
+    if (this.liveSyncInterval) clearInterval(this.liveSyncInterval);
+
+    this.liveSyncInterval = setInterval(async () => {
+      try {
+        const data = await API.getIssues(this.filters);
+        const incomingIssues = data.issues || [];
+
+        // Check if data changed
+        if (incomingIssues.length !== this.lastKnownIssueCount || JSON.stringify(incomingIssues) !== JSON.stringify(this.issues)) {
+          const isNewDefect = incomingIssues.length > this.lastKnownIssueCount && this.lastKnownIssueCount > 0;
+          this.issues = incomingIssues;
+          this.lastKnownIssueCount = incomingIssues.length;
+
+          // Re-render map markers and list dynamically
+          this.mapController.renderMarkers(this.issues);
+          this.renderQueueList(this.issues);
+          this.renderRecentDriverList(this.issues);
+          await this.loadStats();
+
+          if (isNewDefect) {
+            const latest = incomingIssues[0];
+            this.showToast(`🚨 New Live Defect Detected: ${latest.title} (${latest.location?.street})`);
+          }
+        }
+      } catch (err) {
+        // Silent catch for background polling
+      }
+    }, 3000);
+  }
+
   async refreshAll() {
     await Promise.all([this.loadIssues(), this.loadStats()]);
   }
@@ -211,6 +264,7 @@ class RoadSenseApp {
     try {
       const data = await API.getIssues(this.filters);
       this.issues = data.issues || [];
+      this.lastKnownIssueCount = this.issues.length;
       this.renderQueueList(this.issues);
       this.renderRecentDriverList(this.issues);
       this.mapController.renderMarkers(this.issues);
@@ -222,11 +276,17 @@ class RoadSenseApp {
   async loadStats() {
     try {
       const stats = await API.getStats();
-      document.getElementById("kpiTotal").innerText = stats.total_issues;
-      document.getElementById("kpiCritical").innerText = stats.critical_count;
-      document.getElementById("kpiClusters").innerText = stats.clusters_count;
-      document.getElementById("kpiInRepair").innerText = stats.in_repair_count;
-      document.getElementById("kpiResolved").innerText = stats.resolved_count;
+      const elTotal = document.getElementById("kpiTotal");
+      const elCritical = document.getElementById("kpiCritical");
+      const elClusters = document.getElementById("kpiClusters");
+      const elInRepair = document.getElementById("kpiInRepair");
+      const elResolved = document.getElementById("kpiResolved");
+
+      if (elTotal) elTotal.innerText = stats.total_issues;
+      if (elCritical) elCritical.innerText = stats.critical_count;
+      if (elClusters) elClusters.innerText = stats.clusters_count;
+      if (elInRepair) elInRepair.innerText = stats.in_repair_count;
+      if (elResolved) elResolved.innerText = stats.resolved_count;
     } catch (err) {
       console.error("Failed loading stats:", err);
     }
@@ -396,9 +456,9 @@ class RoadSenseApp {
     let tHtml = "";
     (issue.reports || []).forEach((rep) => {
       const timeStr = new Date(rep.timestamp).toLocaleString();
-      const isSensor = rep.source === "simulated_sensor";
+      const isSensor = rep.source === "simulated_sensor" || rep.source === "mobile_sensor";
       const sourceBadge = isSensor
-        ? `<span style="color: #38bdf8; font-weight: 700;">⚡ Telemetry Auto-Detection (${rep.peak_g}G)</span>`
+        ? `<span style="color: #38bdf8; font-weight: 700;">⚡ IMU Sensor Detection (${rep.peak_g || 2.5}G)</span>`
         : `<span style="color: #a78bfa; font-weight: 700;">👤 Driver Manual Report</span>`;
 
       tHtml += `
@@ -496,30 +556,21 @@ class RoadSenseApp {
     }
   }
 
-  async handleSimulatedDetection(event) {
-    try {
-      const payload = {
-        type: event.type,
-        severity: event.severity,
-        lat: event.lat,
-        lng: event.lng,
-        street: event.street,
-        neighborhood: event.neighborhood,
-        source: "simulated_sensor",
-        peak_g: event.peak_g
-      };
-
-      const res = await API.submitReport(payload);
-      if (!res.is_new_cluster) {
-        this.showToast(`⚡ Cluster Corroborated! #${res.issue.id} now has ${res.corroboration_count} reports (${res.new_confidence}% confidence).`);
+  /**
+   * Callback fired when live mobile hardware (or simulated backup) triggers a bump.
+   */
+  async handleLiveBumpDetected(payload, apiResponse) {
+    if (apiResponse && apiResponse.issue) {
+      if (!apiResponse.is_new_cluster) {
+        this.showToast(`⚡ Cluster Corroborated! #${apiResponse.issue.id} now has ${apiResponse.corroboration_count} reports (${apiResponse.new_confidence}% confidence).`);
       } else {
-        this.showToast(`⚡ New road anomaly registered: #${res.issue.id}`);
+        this.showToast(`🚨 New Road Defect Logged: #${apiResponse.issue.id} on ${apiResponse.issue.location?.street || "Corridor"}!`);
       }
-
-      await this.refreshAll();
-    } catch (err) {
-      console.error("Detection handling error:", err);
+    } else {
+      this.showToast(`⚡ Motion impact reported to /api/report (${payload.intensity} m/s²)!`);
     }
+
+    await this.refreshAll();
   }
 
   async handleManualReportSubmit() {
@@ -528,12 +579,14 @@ class RoadSenseApp {
     const street = document.getElementById("manualReportStreet").value.trim() || "Reported Corridor";
     const comment = document.getElementById("manualReportNotes").value.trim();
 
+    // Use current GPS if available
+    const gps = this.sensorSimulator ? this.sensorSimulator.currentGps : { lat: 12.9719, lng: 77.5937 };
     const payload = {
       type: type,
       severity: severity,
       street: street,
-      lat: 12.9719 + (Math.random() - 0.5) * 0.003, // close to corridor to demonstrate clustering
-      lng: 77.5937 + (Math.random() - 0.5) * 0.003,
+      latitude: gps.lat + (Math.random() - 0.5) * 0.002,
+      longitude: gps.lng + (Math.random() - 0.5) * 0.002,
       source: "manual_driver",
       comment: comment
     };

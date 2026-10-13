@@ -108,45 +108,67 @@
         
         <!-- Left: Telemetry & Sensing Controls -->
         <div class="driver-card">
+
+          <!-- Secure Context Notice (shown if not HTTPS / localhost) -->
+          <div class="secure-context-banner" id="secureContextNotice">
+            <strong>⚠️ Mobile Sensor Security Notice (Browser Policy):</strong> Chrome (Android) and Safari (iOS) enforce that motion sensors (<code>DeviceMotionEvent</code>) and continuous GPS require an <strong>HTTPS</strong> secure context or <strong>localhost</strong>.
+            <div style="margin-top: 0.35rem; font-size: 0.78rem;">
+              • When running over local Wi-Fi (<code>http://192.168.x.x:5000</code>), connect via USB with Chrome Port Forwarding (<code>chrome://inspect</code>) to access <code>http://localhost:5000</code>, or enable <code>chrome://flags/#unsafely-treat-insecure-origin-as-secure</code>.
+              <br/>• Or tap <strong>"⚡ Manual Simulate Trigger"</strong> below for instant presentation testing.
+            </div>
+          </div>
+
+          <!-- Bump Alert Banner (Flashes on physical or simulated impact) -->
+          <div id="hudBumpAlertBanner">💥 BUMP DETECTED: 18.2 m/s² — Auto-Dispatched to City Map!</div>
+
           <div class="card-header">
             <span class="card-title">
-              <span>📱</span> Smartphone Drive Sensing HUD
+              <span>📱</span> Mobile Drive Sensing HUD
             </span>
             <div class="sensing-controls">
-              <button class="btn btn-secondary btn-sm" id="toggleSensingBtn">Pause Sensing</button>
-              <button class="btn btn-primary btn-sm" id="triggerBumpBtn">⚡ Inject Pothole Bump</button>
+              <button class="btn btn-primary btn-sm" id="toggleSensingBtn">
+                <span>▶</span> <span>Start Tracking</span>
+              </button>
+              <button class="btn btn-secondary btn-sm" id="triggerBumpBtn" title="Simulates a 3.85G vertical bump as a backup for demo presentations">
+                <span>⚡</span> <span>Manual Simulate Trigger</span>
+              </button>
             </div>
           </div>
 
           <!-- Active indicator -->
           <div class="sensing-hud-status">
             <div class="pulse-indicator">
-              <span class="pulse-dot" id="sensingPulseDot"></span>
-              <span id="sensingStatusText" style="color: #fff;">ACTIVE — STREAMING 10Hz SIMULATED TELEMETRY</span>
+              <span class="pulse-dot paused" id="sensingPulseDot"></span>
+              <span id="sensingStatusText" style="color: #fff;">TRACKING IDLE — TAP 'START TRACKING' TO BEGIN</span>
             </div>
+            <span class="tag" id="sensorModeBadge">IDLE</span>
           </div>
 
-          <!-- Gauges -->
-          <div class="hud-gauges">
+          <!-- Gauges Grid (Vertical Z, Long X, Gyro, Speed) -->
+          <div class="hud-gauges-grid">
             <div class="gauge-box">
-              <div class="gauge-val" id="hudGz">1.02 G</div>
+              <div class="gauge-val" id="hudGz">9.8 <span style="font-size:0.75rem;">m/s²</span> <span style="color:var(--text-muted); font-size:0.8rem;">(1.00G)</span></div>
               <div class="gauge-label">Vertical Shock (Z)</div>
             </div>
             <div class="gauge-box">
-              <div class="gauge-val" id="hudGx">0.02 G</div>
+              <div class="gauge-val" id="hudGx">0.00 m/s²</div>
               <div class="gauge-label">Braking Decel (X)</div>
             </div>
             <div class="gauge-box">
-              <div class="gauge-val" id="hudSpeed">42 km/h</div>
+              <div class="gauge-val" id="hudGyro" style="font-size:1.05rem;">α:0° β:0° γ:0°</div>
+              <div class="gauge-label">Gyroscope (Rate)</div>
+            </div>
+            <div class="gauge-box">
+              <div class="gauge-val" id="hudSpeed">0 km/h</div>
               <div class="gauge-label">Vehicle Speed</div>
             </div>
           </div>
 
-          <!-- Waveform Canvas -->
+          <!-- Waveform Canvas & Live GPS Coordinates -->
           <div class="waveform-canvas-container">
             <div class="canvas-title">
               <span>REAL-TIME VERTICAL ACCELEROMETER STREAM</span>
-              <span id="hudGps">GPS: ±3.2m</span>
+              <span id="hudGps">GPS: Searching... (±5m)</span>
             </div>
             <canvas id="accelerometerWaveCanvas" width="500" height="80"></canvas>
           </div>
@@ -245,8 +267,13 @@
             </select>
           </div>
 
-          <!-- Right Tile Switcher -->
+          <!-- Right Tile Switcher & Real-Time Sync Indicator -->
           <div class="filter-group">
+            <div class="live-sync-pill" title="Dashboard automatically polls and synchronizes road defects every 3 seconds in real time without page reload">
+              <span class="live-sync-dot"></span>
+              <span>Live Sync: Auto (3s)</span>
+            </div>
+
             <label class="filter-label" for="tileProviderSelect">Basemap:</label>
             <select class="select-input" id="tileProviderSelect">
               <option value="openstreetmap">OpenStreetMap Standard</option>

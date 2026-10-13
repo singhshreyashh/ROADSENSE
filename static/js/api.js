@@ -4,7 +4,8 @@
  * Encapsulates all asynchronous HTTP client interactions with the Flask backend.
  * Provides clean asynchronous methods for:
  *  - Defect clustering queries with multi-criteria filtering
- *  - Real-time report ingestion (manual citizen inputs and simulated IMU spikes)
+ *  - Real-time report ingestion (manual citizen inputs and hardware mobile IMU spikes)
+ *  - Direct mobile hardware impact reporting via `/api/report`
  *  - Municipal lifecycle transitions (inspection -> schedule -> resolution)
  *  - KPI aggregations and basemap configuration retrieval
  */
@@ -53,6 +54,22 @@ const API = {
       body: JSON.stringify(payload)
     });
     if (!res.ok) throw new Error(`HTTP Error ${res.status}: Failed to dispatch hazard report`);
+    return await res.json();
+  },
+
+  /**
+   * Directly posts mobile sensor impact detection payload to /api/report.
+   * Matches spatial clusters in real time.
+   * @param {Object} payload - { latitude, longitude, intensity, speed, timestamp, type, severity }
+   * @returns {Promise<Object>}
+   */
+  async reportBump(payload) {
+    const res = await fetch("/api/report", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) throw new Error(`HTTP Error ${res.status}: Failed to report sensor impact to /api/report`);
     return await res.json();
   },
 

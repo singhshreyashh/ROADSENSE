@@ -1,4 +1,4 @@
-"""
+﻿"""
 RoadSense — Civic Road-Condition Mapping System
 Backend API & Application Server (Flask)
 
@@ -14,6 +14,7 @@ teams to prioritize physical inspections and dispatch maintenance crews efficien
 """
 
 import os
+import sys
 import json
 import math
 import copy
@@ -27,7 +28,6 @@ app = Flask(__name__, static_folder="static", template_folder="templates")
 SEED_FILE = os.path.join(os.path.dirname(__file__), "data", "seed_issues.json")
 
 # In-memory working database initialized from seed data
-# Note: For production deployment, replace with PostgreSQL + PostGIS (ST_DWithin)
 WORKING_ISSUES = []
 
 def load_seed_data():
@@ -44,19 +44,18 @@ def load_seed_data():
 
 load_seed_data()
 
+# Enable CORS for local network mobile testing (e.g. phones connecting over Wi-Fi / hotspot)
+@app.after_request
+def add_cors_headers(response):
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
+    response.headers["Access-Control-Allow-Methods"] = "GET, POST, PATCH, OPTIONS"
+    return response
+
 def haversine_distance(lat1, lon1, lat2, lon2):
     """
     Computes the great-circle distance between two points on the Earth's surface (in meters)
     using the spherical Haversine formula.
-
-    Mathematical Basis:
-      a = sin²(Δφ/2) + cos(φ1) * cos(φ2) * sin²(Δλ/2)
-      c = 2 * atan2(√a, √(1-a))
-      d = R * c  (where R = 6,371,000 meters)
-
-    Accuracy Note:
-      Haversine provides sub-meter precision over typical urban corridor clustering distances
-      (<500m), avoiding the computational overhead of full ellipsoidal geodesic Vincenty calculations.
     """
     R = 6371000.0  # Earth's mean radius in meters
     phi1 = math.radians(lat1)
@@ -72,16 +71,6 @@ def haversine_distance(lat1, lon1, lat2, lon2):
 def calculate_confidence(report_count, has_telemetry=True, peak_g=0.0):
     """
     Calculates statistical defect confidence score (0-100%) and tier (low/medium/high).
-    
-    Crowdsourcing Corroboration Heuristic:
-      - 1 single report:   ~42% (Provisional anomaly, could be device drop or phone handling)
-      - 2 independent trips: ~68% (Corroborated incident, warrants monitoring)
-      - 3 independent trips: ~84% (High confidence defect cluster)
-      - 4+ trips:          90-98% (Multi-vehicle confirmed infrastructure failure)
-    
-    Telemetry Modifier:
-      Reports accompanied by strong vertical accelerometer impulses (>3.0G) receive
-      an additional confidence boost (+4%), reflecting high sensor certainty.
     """
     if report_count <= 1:
         base = 42
@@ -92,7 +81,6 @@ def calculate_confidence(report_count, has_telemetry=True, peak_g=0.0):
     elif report_count == 4:
         base = 90
     else:
-        # Diminishing returns scaling up to 98%
         base = min(98, 90 + (report_count - 4) * 2)
 
     # Boost score if sensor telemetry exceeds critical impact threshold
@@ -115,8 +103,6 @@ def index():
 def get_tile_config():
     """
     Returns supported map tile providers and attribution terms.
-    Enables dynamic cartographic basemap switching in Leaflet without code edits.
-    Complies with OpenStreetMap Tile Usage Policy and CARTO attribution standards.
     """
     return jsonify({
         "default": "openstreetmap",
@@ -149,12 +135,6 @@ def get_tile_config():
 def get_issues():
     """
     Returns filtered road defect clusters.
-    Supports multi-criteria querying:
-      - type: pothole | harsh_braking | sharp_swerve | all
-      - severity: low | medium | high | critical | all
-      - confidence: low | medium | high | all
-      - status: reported | under_review | scheduled | in_progress | resolved | all
-      - search: substring search across title, street, neighborhood, or ID
     """
     type_filter = request.args.get("type")
     severity_filter = request.args.get("severity")
@@ -202,103 +182,120 @@ def get_issue_detail(issue_id):
             return jsonify(issue)
     return jsonify({"error": "Issue not found"}), 404
 
-@app.route("/api/issues", methods=["POST"])
-def submit_issue():
+def process_hazard_payload(data):
     """
-    Ingests a newly detected or manually submitted road hazard.
-    
-    Spatial Deduplication & Aggregation Logic:
-      1. Parses coordinate (lat, lng) and hazard category.
-      2. Scans existing issues within a 120-meter cluster threshold window.
-         - 120m accounts for urban street canyon GPS multi-path drift and lane width.
-      3. If a match is found:
-         - Appends trip report to existing cluster
-         - Increments corroboration count
-         - Recomputes statistical confidence score
-         - Elevates defect severity if new report indicates higher damage risk
-      4. If no nearby match exists:
-         - Instantiates a new provisional defect cluster with 1 initial report.
+    Core ingestion & spatial clustering engine.
+    Handles payloads from both `/api/issues` and `/api/report`.
+    Supports mobile hardware sensor inputs (latitude, longitude, intensity, speed).
     """
-    data = request.get_json(force=True)
     if not data:
-        return jsonify({"error": "Missing payload"}), 400
+        return {"error": "Missing payload"}, 400
 
     hazard_type = data.get("type", "pothole")
-    lat = float(data.get("lat", 12.9716))
-    lng = float(data.get("lng", 77.5946))
-    street = data.get("street", "Reported Urban Corridor")
-    neighborhood = data.get("neighborhood", "Downtown Sector")
-    severity = data.get("severity", "medium")
-    source = data.get("source", "manual_driver")
-    comment = data.get("comment", "")
-    peak_g = float(data.get("peak_g", 2.5 if hazard_type == "pothole" else 0.75))
+    
+    # Lat/Lng normalization
+    lat = data.get("latitude") if data.get("latitude") is not None else data.get("lat")
+    lng = data.get("longitude") if data.get("longitude") is not None else data.get("lng")
+    
+    if lat is None or lng is None:
+        lat = 12.9719
+        lng = 77.5937
+    else:
+        try:
+            lat = float(lat)
+            lng = float(lng)
+        except (ValueError, TypeError):
+            lat = 12.9719
+            lng = 77.5937
 
-    now_iso = datetime.now(timezone.utc).isoformat()
+    # Intensity / G-force normalization
+    intensity = data.get("intensity")
+    peak_g = data.get("peak_g")
+    
+    if peak_g is not None:
+        try:
+            peak_g = float(peak_g)
+        except (ValueError, TypeError):
+            peak_g = 2.5
+    elif intensity is not None:
+        try:
+            val = float(intensity)
+            # If intensity is in m/s² (e.g. > 9.0), convert to G force
+            peak_g = val / 9.80665 if val > 9.0 else val
+        except (ValueError, TypeError):
+            peak_g = 2.5
+    else:
+        peak_g = 2.5 if hazard_type == "pothole" else 0.85
+
+    street = data.get("street") or f"Urban Corridor ({lat:.4f}, {lng:.4f})"
+    neighborhood = data.get("neighborhood") or "Central District"
+    severity = data.get("severity") or ("critical" if peak_g > 3.0 else ("high" if peak_g > 1.8 else "medium"))
+    source = data.get("source", "mobile_sensor")
+    comment = data.get("comment", "")
+    speed = float(data.get("speed", 36.0) or 36.0)
+
+    now_iso = data.get("timestamp") or datetime.now(timezone.utc).isoformat()
     trip_id = f"TRIP-{len(WORKING_ISSUES)*10 + 101}"
 
-    # Urban corridor spatial clustering radius in meters
+    # Urban corridor spatial clustering radius in meters (120m corridor grouping window)
     CLUSTER_THRESHOLD_METERS = 120.0
     matched_issue = None
 
     for issue in WORKING_ISSUES:
         loc = issue.get("location", {})
         d = haversine_distance(lat, lng, loc.get("lat", 0), loc.get("lng", 0))
-        # Match if within spatial threshold and identical hazard category
         if d <= CLUSTER_THRESHOLD_METERS and issue.get("type") == hazard_type:
             matched_issue = issue
             break
 
+    device_label = "Mobile Phone Sensor (Live)" if source == "mobile_sensor" else (
+        "Driver Web UI" if source == "manual_driver" else "Simulated Accelerometer"
+    )
+
     new_report_entry = {
-        "report_id": f"REP-{len(WORKING_ISSUES)*30 + len(matched_issue['reports']) + 1 if matched_issue else 999}",
+        "report_id": f"REP-{len(WORKING_ISSUES)*30 + (len(matched_issue['reports']) if matched_issue else 0) + 1}",
         "trip_id": trip_id,
         "timestamp": now_iso,
         "source": source,
-        "device_type": "Driver Web UI" if source == "manual_driver" else "Simulated Accelerometer",
-        "peak_g": peak_g if source != "manual_driver" else None,
-        "user_comment": comment or ("Simulated threshold breach detected" if source != "manual_driver" else "Manual road hazard logged")
+        "device_type": device_label,
+        "peak_g": round(peak_g, 2) if source != "manual_driver" else None,
+        "speed_kmh": round(speed, 1),
+        "user_comment": comment or f"Hardware motion spike detected ({round(peak_g * 9.81, 1)} m/s²)"
     }
 
     if matched_issue:
-        # Spatial Corroboration: increment report count and elevate confidence
         matched_issue["reports"].append(new_report_entry)
         matched_issue["report_count"] = len(matched_issue["reports"])
         matched_issue["is_cluster"] = True
         matched_issue["updated_at"] = now_iso
 
-        # Elevate severity if incoming report indicates higher hazard intensity
         severity_ranks = {"low": 1, "medium": 2, "high": 3, "critical": 4}
         if severity_ranks.get(severity, 1) > severity_ranks.get(matched_issue.get("severity"), 1):
             matched_issue["severity"] = severity
 
-        # Recalculate confidence score with multi-trip boost
-        has_telemetry = any(r.get("source") == "simulated_sensor" for r in matched_issue["reports"])
+        has_telemetry = any(r.get("source") in ["simulated_sensor", "mobile_sensor"] for r in matched_issue["reports"])
         conf_score, conf_level = calculate_confidence(matched_issue["report_count"], has_telemetry, peak_g)
         matched_issue["confidence"] = conf_score
         matched_issue["confidence_level"] = conf_level
 
-        return jsonify({
+        return {
             "message": "Corroborated existing road issue cluster",
             "is_new_cluster": False,
             "corroboration_count": matched_issue["report_count"],
             "new_confidence": conf_score,
             "issue": matched_issue
-        }), 200
+        }, 200
 
     else:
-        # Create brand-new provisional defect cluster
         new_id = f"RS-{len(WORKING_ISSUES) + 101}"
-        conf_score, conf_level = calculate_confidence(1, has_telemetry=(source == "simulated_sensor"), peak_g=peak_g)
+        conf_score, conf_level = calculate_confidence(1, has_telemetry=(source in ["simulated_sensor", "mobile_sensor"]), peak_g=peak_g)
 
-        # Generate realistic waveform preview based on kinematic signature
         if hazard_type == "pothole":
-            # Sharp vertical shockwave followed by rebound oscillation
-            waveform = [0.98, 1.05, 1.85, peak_g, -0.92, 1.34, 1.01]
+            waveform = [0.98, 1.05, 1.85, round(peak_g, 2), -0.92, 1.34, 1.01]
         elif hazard_type == "harsh_braking":
-            # Rapid deceleration trough (negative longitudinal force)
-            waveform = [0.0, -0.15, -0.42, -peak_g, -0.65, -0.22, 0.0]
-        else: # swerve
-            # Bipolar lateral acceleration excursion (evasion left then counter-steer)
-            waveform = [0.0, 0.32, peak_g, -0.84, -0.35, 0.1, 0.0]
+            waveform = [0.0, -0.15, -0.42, round(-peak_g, 2), -0.65, -0.22, 0.0]
+        else:
+            waveform = [0.0, 0.32, round(peak_g, 2), -0.84, -0.35, 0.1, 0.0]
 
         new_issue = {
             "id": new_id,
@@ -320,8 +317,8 @@ def submit_issue():
             "report_count": 1,
             "is_cluster": False,
             "telemetry": {
-                "peak_g_force": peak_g,
-                "speed_at_detection": 41.0,
+                "peak_g_force": round(peak_g, 2),
+                "speed_at_detection": round(speed, 1),
                 "anomaly_duration_ms": 360,
                 "waveform_sample": waveform
             },
@@ -330,28 +327,52 @@ def submit_issue():
                 "assigned_dept": "Public Works Triage Intake",
                 "assigned_crew": "Pending Review",
                 "priority": "P3 - Moderate" if severity in ["low", "medium"] else "P1 - Urgent",
-                "notes": "Initial report logged via RoadSense platform."
+                "notes": "Live motion impact report registered via RoadSense mobile platform."
             }
         }
 
         WORKING_ISSUES.insert(0, new_issue)
-        return jsonify({
+        return {
             "message": "Created new road issue report",
             "is_new_cluster": True,
             "corroboration_count": 1,
             "new_confidence": conf_score,
             "issue": new_issue
-        }), 201
+        }, 201
 
-@app.route("/api/issues/<issue_id>/status", methods=["PATCH"])
+@app.route("/api/issues", methods=["POST", "OPTIONS"])
+def submit_issue():
+    """Manual or simulated hazard submission endpoint."""
+    if request.method == "OPTIONS":
+        return jsonify({}), 200
+    data = request.get_json(force=True, silent=True)
+    res_data, status_code = process_hazard_payload(data)
+    return jsonify(res_data), status_code
+
+@app.route("/api/report", methods=["POST", "OPTIONS"])
+def report_pothole():
+    """
+    Direct mobile sensor impact ingestion endpoint.
+    Expects { latitude, longitude, intensity, speed, timestamp, ... }
+    Automatically dedupes, updates confidence, and returns updated cluster.
+    """
+    if request.method == "OPTIONS":
+        return jsonify({}), 200
+    data = request.get_json(force=True, silent=True)
+    res_data, status_code = process_hazard_payload(data)
+    return jsonify(res_data), status_code
+
+@app.route("/api/issues/<issue_id>/status", methods=["PATCH", "OPTIONS"])
 def update_issue_status(issue_id):
     """
     Municipal triage lifecycle transition endpoint.
     Permits authorized inspectors to advance repair state:
       reported -> under_review -> scheduled -> in_progress -> resolved
-    and assign field maintenance squads and resolution audit notes.
     """
-    data = request.get_json(force=True)
+    if request.method == "OPTIONS":
+        return jsonify({}), 200
+
+    data = request.get_json(force=True, silent=True)
     if not data:
         return jsonify({"error": "Missing payload"}), 400
 
@@ -384,12 +405,7 @@ def update_issue_status(issue_id):
 @app.route("/api/stats", methods=["GET"])
 def get_stats():
     """
-    Computes aggregate civic metrics for the government operations top bar:
-      - total_issues: Total tracked road defects
-      - critical_count: Critical and high severity defects requiring urgent action
-      - clusters_count: Multi-trip corroborated clusters (>=2 independent trips)
-      - in_repair_count: Work orders currently scheduled or in progress
-      - resolved_count: Closed and resurfaced defects
+    Computes aggregate civic metrics for the dashboard header.
     """
     total = len(WORKING_ISSUES)
     critical_or_high = len([i for i in WORKING_ISSUES if i.get("severity") in ["critical", "high"]])
@@ -412,12 +428,13 @@ def get_stats():
         "by_type": by_type
     })
 
-@app.route("/api/reset", methods=["POST"])
+@app.route("/api/reset", methods=["POST", "OPTIONS"])
 def reset_data():
     """
     Restores seed dataset to initial hackathon demonstration baseline.
-    Ensures judges and reviewers can reliably re-run the demo script from scratch.
     """
+    if request.method == "OPTIONS":
+        return jsonify({}), 200
     load_seed_data()
     return jsonify({
         "message": "Database reset to initial hackathon seed state",
@@ -425,5 +442,12 @@ def reset_data():
     })
 
 if __name__ == "__main__":
-    # Development server binding to localhost port 5000
-    app.run(host="127.0.0.1", port=5000, debug=True)
+    host = "0.0.0.0"
+    port = 5000
+    ssl_context = None
+    if "--ssl" in sys.argv:
+        ssl_context = "adhoc"
+        print("Starting RoadSense with HTTPS adhoc SSL context...")
+
+    print(f"RoadSense Server running on http://{host}:{port} (and http://127.0.0.1:{port})")
+    app.run(host=host, port=port, debug=True, ssl_context=ssl_context)
